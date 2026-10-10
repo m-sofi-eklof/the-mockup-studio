@@ -1,7 +1,7 @@
 // Shared pet animation, in sprite-pixel units. Mirrors the CSS animations in index.css so the
 // animated GIF background and the terminal greeting move the same way as the app preview.
 import type { Decor } from './Decor'
-import { PETS, type PetName } from './pets'
+import { petInfo, type PetName } from './pets'
 
 export type MotionFrame = {
   /** horizontal offset of the whole pet row (walk) */
@@ -68,20 +68,24 @@ export function motionFrames(anim: Decor['petAnim'], travel: number, opts: { wal
 
 export type PixelGrid = (string | null)[][]
 
-/** A pet as a grid of colors (null = transparent), optionally mirrored and squashed (anchored at the bottom). */
+/**
+ * A pet as a grid of colors (null = transparent), optionally mirrored and squashed (anchored at the bottom).
+ * The grid is in the hand-drawn pets' pixel size, so detailed sprites (px < 1) are sampled down to match.
+ */
 export function petGrid(name: PetName, flip = false, sy = 1): PixelGrid {
-  const { sprite, palette } = PETS[name]
-  const pal = palette as Record<string, string>
+  const { sprite, palette } = petInfo(name)
   const w = sprite[0].length
   const h = sprite.length
-  const outH = Math.max(1, Math.round(h * sy))
+  const { w: outW, h: fullH } = petDims(name)
+  const outH = Math.max(1, Math.round(fullH * sy))
   const grid: PixelGrid = []
   for (let y = 0; y < outH; y++) {
     const srcY = Math.min(h - 1, Math.floor((y / outH) * h))
     const row: (string | null)[] = []
-    for (let x = 0; x < w; x++) {
-      const ch = sprite[srcY][flip ? w - 1 - x : x]
-      row.push(pal[ch] ?? null)
+    for (let x = 0; x < outW; x++) {
+      const srcX = Math.min(w - 1, Math.floor((x / outW) * w))
+      const ch = sprite[srcY][flip ? w - 1 - srcX : srcX]
+      row.push(palette[ch] ?? null)
     }
     grid.push(row)
   }
@@ -89,8 +93,8 @@ export function petGrid(name: PetName, flip = false, sy = 1): PixelGrid {
 }
 
 export function petDims(name: PetName) {
-  const { sprite } = PETS[name]
-  return { w: sprite[0].length, h: sprite.length }
+  const { sprite, px = 1 } = petInfo(name)
+  return { w: Math.max(1, Math.round(sprite[0].length * px)), h: Math.max(1, Math.round(sprite.length * px)) }
 }
 
 export const PET_GAP = 6

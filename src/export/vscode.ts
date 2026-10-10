@@ -1,4 +1,6 @@
 import type { Decor } from '../decor/Decor'
+import { petStripLayout, petStripPng } from '../decor/petFrames'
+import { petInfo, type PetName } from '../decor/pets'
 import { petSvg, renderDecorPng } from '../decor/render'
 import { TOKEN_KEYS, WORKBENCH_KEYS, type TokenKey, type VSCodeTheme, type WorkbenchKey } from '../presets/vscode'
 import { isLight, shift } from '../utils/color'
@@ -57,8 +59,17 @@ export function vscodeColorTheme(t: VSCodeTheme, name: string) {
   }
 }
 
+const petFile = (name: PetName) => `pet-${slugify(name)}.png`
+
+/** Markup for one pet in the webview. Animated pets are a film strip image in media/ ({{media}} is filled in at runtime). */
+function petHtml(name: PetName, scale: number) {
+  if (!petInfo(name).anim) return petSvg(name, scale)
+  const { n, width, height, animation } = petStripLayout(name, scale)
+  return `<div class="frames" style="width:${width}px;height:${height}px"><img src="{{media}}/${petFile(name)}" style="width:${width * n}px;height:${height}px;animation:frames ${animation}"></div>`
+}
+
 function extensionJs(decor: Decor, base: string, label: string, hasScene: boolean, viewId: string | null) {
-  const pets = decor.pets.map((p) => petSvg(p, decor.petScale))
+  const pets = decor.pets.map((p) => petHtml(p, decor.petScale))
   const config = {
     label, pets, anim: decor.petAnim, position: decor.petPosition, base, hasScene, viewId,
     behindCode: hasScene && decor.behindCode, strength: decor.strength / 100,
@@ -102,12 +113,12 @@ async function syncBackground(context) {
   if (next && JSON.stringify(next) !== JSON.stringify(cur)) await cfg.update('editor', next, vscode.ConfigurationTarget.Global)
 }
 
-function html(webview, sceneUri) {
+function html(webview, sceneUri, mediaUri) {
   const csp = "default-src 'none'; img-src " + webview.cspSource + "; style-src 'unsafe-inline';"
   const top = CONFIG.position === 'perched'
   const side = CONFIG.position === 'bottom-left' ? 'left:12px;' : 'right:12px;'
   const rowPos = (top ? 'top:12px;' : 'bottom:12px;') + (CONFIG.anim === 'walk' ? '' : side)
-  const pets = CONFIG.pets.map((svg, i) => '<div class="pet" style="animation-delay:' + i * 0.18 + 's">' + svg + '</div>').join('')
+  const pets = CONFIG.pets.map((svg, i) => '<div class="pet" style="animation-delay:' + i * 0.18 + 's">' + svg.split('{{media}}').join(mediaUri) + '</div>').join('')
   return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="' + csp + '">' +
     '<style>' +
     'html,body{margin:0;padding:0;height:100%;overflow:hidden;background:' + CONFIG.base + ';}' +
@@ -115,6 +126,8 @@ function html(webview, sceneUri) {
     (sceneUri ? 'background-image:url(' + sceneUri + ');' : '') + '}' +
     '.row{position:fixed;display:flex;gap:6px;align-items:flex-end;' + rowPos + '}' +
     '.pet svg{display:block;filter:drop-shadow(0 2px 0 #0004)}' +
+    '.frames{overflow:hidden;filter:drop-shadow(0 2px 0 #0004)}.frames img{display:block;max-width:none;image-rendering:pixelated}' +
+    '@keyframes frames{to{transform:translateX(-100%)}}' +
     '.anim-bob .pet{animation:bob 1s steps(2) infinite}' +
     '.anim-hop .pet{animation:hop 1.4s ease-in-out infinite}' +
     '.anim-walk{animation:walk 14s linear infinite}.anim-walk .pet{animation:bob .5s steps(2) infinite}' +
@@ -139,7 +152,7 @@ function activate(context) {
         const media = vscode.Uri.joinPath(context.extensionUri, 'media')
         view.webview.options = { enableScripts: false, localResourceRoots: [media] }
         const sceneUri = CONFIG.hasScene ? view.webview.asWebviewUri(vscode.Uri.joinPath(media, 'scene.png')).toString() : ''
-        view.webview.html = html(view.webview, sceneUri)
+        view.webview.html = html(view.webview, sceneUri, view.webview.asWebviewUri(media).toString())
       },
     }),
   )
@@ -249,6 +262,8 @@ Font settings aren't part of a color theme — add these to your settings.json i
     const png = await renderDecorPng(decor, t.editorBg, { width: 960, height: 540, bakePets: false })
     if (png) files['extension/media/scene.png'] = png
   }
+
+  for (const p of decor.pets) if (petInfo(p).anim) files[`extension/media/${petFile(p)}`] = await petStripPng(p)
 
   return {
     filename: `${id}.vsix`,

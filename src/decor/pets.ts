@@ -1,5 +1,14 @@
+import { FAWN_FRAMES, FAWN_FRAME_MS, FAWN_PALETTE } from './fawn'
+
 // Hand-drawn 13px-wide pixel pets. '.' = transparent, other chars map to the pet's palette.
-export type Pet = { sprite: string[]; palette: Record<string, string> }
+export type Pet = {
+  sprite: string[]
+  palette: Record<string, string>
+  /** Size of one sprite pixel compared with the hand-drawn pets'. Detailed sprites use smaller pixels (default 1). */
+  px?: number
+  /** The pet's own frame-by-frame animation, played where it is shown live (app preview, VS Code panel). */
+  anim?: { frames: string[][]; frameMs: number }
+}
 
 const outline = '#2b2033'
 
@@ -117,7 +126,9 @@ export const PETS = {
   Slime: { sprite: SLIME, palette: { k: '#2c5f8a', g: '#7cc8ff', w: '#e3f5ff', e: '#16324a', p: '#ff9fc8' } },
   Chick: { sprite: CHICK, palette: { k: outline, y: '#ffe066', w: '#ffd43b', e: outline, o: '#ff922b', p: '#ffa8a8' } },
   Puppy: { sprite: PUPPY, palette: { k: outline, d: '#9c6b4a', b: '#e8c39e', e: outline, p: '#ff8fab' } },
+  Fawn: { sprite: FAWN_FRAMES[0], palette: FAWN_PALETTE, px: 0.5, anim: { frames: FAWN_FRAMES, frameMs: FAWN_FRAME_MS } },
 } satisfies Record<string, Pet>
 
 export type PetName = keyof typeof PETS
 export const PET_NAMES = Object.keys(PETS) as PetName[]
+export const petInfo = (name: PetName): Pet => PETS[name]

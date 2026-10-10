@@ -1,7 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { Download } from 'lucide-react'
 import { Choice, Section, Slider } from '../components/ControlPanel'
-import { PETS, PET_NAMES, type PetName } from './pets'
+import { PET_NAMES, petInfo, type PetName } from './pets'
+import { petStripLayout, petStripUrl } from './petFrames'
 import { SCENE_NAMES, downloadScene, sceneUrl, type SceneName } from './scenes'
 import { shade } from '../utils/color'
 
@@ -56,12 +57,19 @@ export function wallpaperStyle(decor: Decor, base: string): CSSProperties | unde
 }
 
 export function PixelPet({ name, scale }: { name: PetName; scale: number }) {
-  const { sprite, palette } = PETS[name]
+  const { sprite, palette: pal, anim } = petInfo(name)
   const w = sprite[0].length
   const h = sprite.length
-  const pal = palette as Record<string, string>
+  const { n, width, height, animation } = petStripLayout(name, scale)
+  if (anim) {
+    return (
+      <div className="pet-frames" style={{ width, height }} aria-label={name}>
+        <img src={petStripUrl(name)} alt="" style={{ width: width * n, height, animation: `pet-frames ${animation}` }} />
+      </div>
+    )
+  }
   return (
-    <svg width={w * scale} height={h * scale} viewBox={`0 0 ${w} ${h}`} shapeRendering="crispEdges" aria-label={name}>
+    <svg width={width} height={height} viewBox={`0 0 ${w} ${h}`} shapeRendering="crispEdges" aria-label={name}>
       {sprite.flatMap((row, y) =>
         [...row].map((ch, x) => (pal[ch] ? <rect key={`${x}-${y}`} x={x} y={y} width={1.02} height={1.02} fill={pal[ch]} /> : null)),
       )}
@@ -157,7 +165,7 @@ export function DecorSection({
         <div className="pet-grid">
           {PET_NAMES.map((p) => (
             <button key={p} className={`pet-pick ${decor.pets.includes(p) ? 'active' : ''}`} onClick={() => togglePet(p)} title={p}>
-              <PixelPet name={p} scale={3} />
+              <PixelPet name={p} scale={petInfo(p).px ? 2 : 3} />
               <span>{p}</span>
             </button>
           ))}

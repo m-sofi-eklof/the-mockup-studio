@@ -8,7 +8,7 @@ import { windowsTerminalFiles } from './wtFragment'
 
 const PET_EMOJI: Record<PetName, string> = {
   'Orange cat': '🐱', 'Gray cat': '🐱', 'Black cat': '🐈‍⬛', Bunny: '🐰', Frog: '🐸',
-  Ghost: '👻', Slime: '💧', Chick: '🐥', Puppy: '🐶',
+  Ghost: '👻', Slime: '💧', Chick: '🐥', Puppy: '🐶', Fawn: '🦌',
 }
 
 /** Claude Code's "ANSI colors only" themes draw from these 16 slots, so this is how the colors reach Claude. */

@@ -131,6 +131,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .pet-stage > :first-child { width: 100%; }
 .pet-row { position: absolute; display: flex; gap: 6px; align-items: flex-end; z-index: 5; pointer-events: none; }
 .pet svg { display: block; filter: drop-shadow(0 2px 0 #0004); }
+/* A pet with its own frames: a film strip in a one-frame-wide window, stepped along by the animation. */
+.pet-frames { overflow: hidden; }
+.pet .pet-frames { filter: drop-shadow(0 2px 0 #0004); }
+.pet-frames img { display: block; max-width: none; image-rendering: pixelated; }
+@keyframes pet-frames { to { transform: translateX(-100%); } }
 .anim-bob .pet { animation: pet-bob 1s steps(2) infinite; }
 .anim-hop .pet { animation: pet-hop 1.4s ease-in-out infinite; }
 .anim-walk { animation: pet-walk 14s linear infinite; }
